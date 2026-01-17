@@ -1,0 +1,20 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-server
+    password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
+    username: ubuntu
+  network:
+    version: 2
+    ethernets:
+      enp3s0:
+        dhcp4: yes
+  storage:
+    layout:
+      name: lvm
+  ssh:
+    install-server: yes
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICVBGY75ZLhh0ZkBROVbAgUcKFHt3JcSHUyNE9Qk/aJ8 jpuente@ThinkPad
+    allow-pw: true

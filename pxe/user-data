@@ -1,10 +1,11 @@
 #cloud-config
 autoinstall:
   version: 1
-  identity:
-    hostname: ubuntu-server
-    password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
-    username: ubuntu
+  # Commenting to put the sudo nopasswd in the user-data section.
+  # identity:
+  #   hostname: firebata
+  #   password: "$y$j9T$hXvSzutwZ8nYr18tBo7Kg0$eZ1ld0/6Sa14fhyXIhCdjtwad4dDktSy.h5QKxEOjFD"
+  #   username: ubuntu
   network:
     version: 2
     ethernets:
@@ -12,9 +13,28 @@ autoinstall:
         dhcp4: yes
   storage:
     layout:
-      name: lvm
+      name: direct
   ssh:
     install-server: yes
     authorized-keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICVBGY75ZLhh0ZkBROVbAgUcKFHt3JcSHUyNE9Qk/aJ8 jpuente@ThinkPad
-    allow-pw: true
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICVBGY75ZLhh0ZkBROVbAgUcKFHt3JcSHUyNE9Qk/aJ8 jpuente@ThinkPad"
+    allow-pw: false
+
+  # Put the cloud init in here if you want it running in the final system.
+  user-data:
+    ssh_pwauth: false
+    hostname: firebata
+    manage_etc_hosts: true
+    users:
+      - default
+      - name: ubuntu
+        passwd: "$y$j9T$hXvSzutwZ8nYr18tBo7Kg0$eZ1ld0/6Sa14fhyXIhCdjtwad4dDktSy.h5QKxEOjFD"
+        lock_passwd: false
+        sudo: "ALL=(ALL) NOPASSWD:ALL"
+        ssh_authorized_keys:
+          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICVBGY75ZLhh0ZkBROVbAgUcKFHt3JcSHUyNE9Qk/aJ8 jpuente@ThinkPad"
+    package_update: true
+    package_upgrade: true
+    runcmd:
+      # WTF
+      - passwd -u ubuntu

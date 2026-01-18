@@ -1,0 +1,50 @@
+---
+- name: Install Kubernetes packages
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    update_cache: true
+
+- name: Hold Kubernetes packages at current version
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Initialize Kubernetes cluster
+  ansible.builtin.command:
+    cmd: >
+      kubeadm init
+      --pod-network-cidr={{ pod_cidr }}
+      --skip-phases=addon/kube-proxy
+    creates: /etc/kubernetes/admin.conf
+
+- name: Create kubeconfig directory
+  ansible.builtin.file:
+    path: "{{ kube_user_home }}/.kube"
+    state: directory
+    owner: "{{ kube_user }}"
+    mode: '0700'
+
+- name: Copy kubeconfig
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ kubeconfig_path }}"
+    owner: "{{ kube_user }}"
+    mode: '0600'
+    remote_src: true
+
+- name: Remove control-plane taint for single-node cluster
+  ansible.builtin.command:
+    cmd: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: taint_result
+  changed_when: "'untainted' in taint_result.stdout"
+  failed_when: false

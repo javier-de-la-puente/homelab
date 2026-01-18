@@ -1,0 +1,26 @@
+all:
+  children:
+    k8s:
+      vars:
+        ansible_user: ubuntu
+        ansible_become: true
+
+        # User home directory for kubeconfig
+        kube_user: ubuntu
+        kube_user_home: /home/ubuntu
+        kubeconfig_path: /home/ubuntu/.kube/config
+
+        # Kubernetes
+        pod_cidr: "10.0.0.0/16"
+        kubernetes_version: "1.34"
+
+        # Flux configuration
+        flux:
+          owner: javier-de-la-puente
+          repository: homelab
+          branch: main
+          path: flux/clusters/single-node
+
+      hosts:
+        k8s-node01:
+          ansible_host: 192.168.3.100

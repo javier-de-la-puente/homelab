@@ -1,0 +1,53 @@
+---
+- name: Check if Flux CLI is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/flux
+  register: flux_cli
+
+- name: Download Flux install script
+  ansible.builtin.get_url:
+    url: https://fluxcd.io/install.sh
+    dest: /tmp/flux-install.sh
+    mode: '0755'
+  when: not flux_cli.stat.exists
+
+- name: Install Flux CLI
+  ansible.builtin.command:
+    cmd: /tmp/flux-install.sh
+  when: not flux_cli.stat.exists
+  changed_when: true
+
+- name: Clean up Flux install script
+  ansible.builtin.file:
+    path: /tmp/flux-install.sh
+    state: absent
+
+- name: Check if Flux is bootstrapped
+  ansible.builtin.command: kubectl get namespace flux-system
+  register: flux_namespace
+  failed_when: false
+  changed_when: false
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Check Flux preconditions
+  ansible.builtin.command: flux check --pre
+  when: flux_namespace.rc != 0
+  changed_when: false
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Bootstrap Flux
+  ansible.builtin.command:
+    cmd: >
+      flux bootstrap github
+      --owner={{ flux.owner }}
+      --repository={{ flux.repository }}
+      --branch={{ flux.branch }}
+      --path={{ flux.path }}
+      --personal
+  when: flux_namespace.rc != 0
+  changed_when: true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+    GITHUB_TOKEN: "{{ github_token }}"

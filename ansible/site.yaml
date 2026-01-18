@@ -1,0 +1,10 @@
+---
+- name: Bootstrap single-node Kubernetes with Cilium + Flux
+  hosts: k8s
+  gather_facts: true
+  roles:
+    - containerd
+    - kubernetes_prereqs
+    - kubernetes
+    - cilium
+    - flux

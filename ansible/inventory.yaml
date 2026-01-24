@@ -24,7 +24,22 @@ all:
       hosts:
         firebata:
           ansible_host: 192.168.3.100
+
+          # Storage disks for Longhorn
+          # To add a new disk:
+          #   1. Plug the disk into the node
+          #   2. Find the device with: lsblk
+          #   3. Add entry below with unique label
+          #   4. Run: ansible-playbook -i inventory.yaml add-storage.yaml
+          #
+          # Options:
+          #   device:     Block device path (required)
+          #   mount_path: Where to mount (required)
+          #   label:      Filesystem label, used by Longhorn (required)
+          #   fstype:     Filesystem type (default: ext4)
+          #   force:      Overwrite existing filesystem (default: false)
           storage_disks:
+            # 1.8TB disk for Nextcloud and large volumes
             - device: /dev/sde1
               mount_path: /mnt/longhorn-data
               fstype: ext4

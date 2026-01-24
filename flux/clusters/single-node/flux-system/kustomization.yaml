@@ -10,3 +10,4 @@ resources:
 - loki-kustomization.yaml
 - prometheus-kustomization.yaml
 - alloy-kustomization.yaml
+- grafana-kustomization.yaml

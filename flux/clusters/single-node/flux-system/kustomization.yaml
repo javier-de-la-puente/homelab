@@ -7,3 +7,4 @@ resources:
 - gateway-api-crds-kustomization.yaml
 - cilium-kustomization.yaml
 - gateway-kustomization.yaml
+- loki-kustomization.yaml

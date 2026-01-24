@@ -1,0 +1,56 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nextcloud
+  namespace: nextcloud
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: nextcloud
+      version: "6.x"
+      sourceRef:
+        kind: HelmRepository
+        name: nextcloud
+        namespace: nextcloud
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    image:
+      tag: 32.0.5
+
+    nextcloud:
+      host: nextcloud.local
+      username: admin
+      password: changeme
+
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 500Gi
+
+    internalDatabase:
+      enabled: false
+
+    mariadb:
+      enabled: true
+      auth:
+        database: nextcloud
+        username: nextcloud
+        password: nextcloud-db-pass
+        rootPassword: nextcloud-root-pass
+      primary:
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 5Gi
+
+    redis:
+      enabled: true
+      auth:
+        enabled: false

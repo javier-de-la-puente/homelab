@@ -11,3 +11,4 @@ resources:
 - prometheus-kustomization.yaml
 - alloy-kustomization.yaml
 - grafana-kustomization.yaml
+- nextcloud-kustomization.yaml

@@ -30,11 +30,16 @@
   ansible.builtin.command: swapoff -a
   changed_when: false
 
-- name: Disable swap permanently
+- name: Disable swap in fstab
   ansible.builtin.replace:
     path: /etc/fstab
-    regexp: '^([^#].* swap .*)$'
+    regexp: '^([^#].*\sswap\s.*)$'
     replace: '# \1'
+
+- name: Mask swap.target to prevent swap activation on boot
+  ansible.builtin.systemd:
+    name: swap.target
+    masked: true
 
 - name: Install required packages
   ansible.builtin.apt:

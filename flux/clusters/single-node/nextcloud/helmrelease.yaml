@@ -39,6 +39,8 @@ spec:
 
     mariadb:
       enabled: true
+      image:
+        tag: "11.4"
       auth:
         database: nextcloud
         username: nextcloud

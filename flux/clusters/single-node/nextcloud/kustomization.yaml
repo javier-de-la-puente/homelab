@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - helmrepository.yaml
+  - mariadb.yaml
   - helmrelease.yaml
   - httproute.yaml

@@ -22,7 +22,7 @@ spec:
       retries: 3
   values:
     image:
-      tag: 32.0.5
+      tag: "32.0.5"
 
     nextcloud:
       host: nextcloud.local
@@ -34,25 +34,24 @@ spec:
       storageClass: longhorn
       size: 500Gi
 
+    # Use external MariaDB (official image, not Bitnami)
     internalDatabase:
       enabled: false
 
-    mariadb:
+    externalDatabase:
       enabled: true
-      image:
-        tag: "11.4"
-      auth:
-        database: nextcloud
-        username: nextcloud
-        password: nextcloud-db-pass
-        rootPassword: nextcloud-root-pass
-      primary:
-        persistence:
-          enabled: true
-          storageClass: longhorn
-          size: 5Gi
+      type: mysql
+      host: mariadb.nextcloud.svc.cluster.local
+      database: nextcloud
+      user: nextcloud
+      password: nextcloud-db-pass
+
+    # Disable bundled databases
+    mariadb:
+      enabled: false
+
+    postgresql:
+      enabled: false
 
     redis:
-      enabled: true
-      auth:
-        enabled: false
+      enabled: false

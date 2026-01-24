@@ -1,0 +1,20 @@
+all:
+  children:
+    k8s:
+      vars:
+        ansible_user: ubuntu
+        ansible_become: true
+
+        # Kubernetes
+        pod_cidr: "10.0.0.0/16"
+
+        # Flux configuration
+        flux:
+          owner: your-github-user
+          repository: your-gitops-repo
+          branch: main
+          path: clusters/single-node
+
+      hosts:
+        k8s-node01:
+          ansible_host: 192.168.1.101

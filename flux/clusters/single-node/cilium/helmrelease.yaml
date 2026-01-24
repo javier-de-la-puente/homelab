@@ -39,6 +39,10 @@ spec:
     # Specify the network interface for L2 announcements
     devices: enp3s0
 
+    # Gateway API
+    gatewayAPI:
+      enabled: true
+
     # Operator settings
     operator:
       replicas: 1

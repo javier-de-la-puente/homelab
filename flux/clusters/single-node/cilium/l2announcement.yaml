@@ -4,20 +4,12 @@ kind: CiliumL2AnnouncementPolicy
 metadata:
   name: default-l2-policy
 spec:
-  # Announce all LoadBalancer services
-  serviceSelector:
-    matchExpressions:
-      - key: io.kubernetes.service.type
-        operator: NotIn
-        values:
-          - ClusterIP
-          - NodePort
-  # Use all nodes for announcements (single-node cluster)
-  nodeSelector:
-    matchLabels:
-      kubernetes.io/os: linux
+  # Announce LoadBalancer IPs
+  loadBalancerIPs: true
   # Interfaces to use for L2 announcements
   interfaces:
     - enp3s0
-  # Enable external traffic policy handling
-  externalTrafficPolicy: Cluster
+  # Use all nodes (single-node cluster)
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux

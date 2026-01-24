@@ -1,0 +1,44 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+  namespace: kube-system
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: cilium
+      version: "1.18.x"
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # Kube-proxy replacement
+    kubeProxyReplacement: true
+    k8sServiceHost: 192.168.3.100
+    k8sServicePort: 6443
+
+    # L2 Announcements for LoadBalancer services
+    l2announcements:
+      enabled: true
+
+    # Enable LoadBalancer IP Address Management
+    externalIPs:
+      enabled: true
+
+    # Specify the network interface for L2 announcements
+    devices: enp3s0
+
+    # Operator settings
+    operator:
+      replicas: 1

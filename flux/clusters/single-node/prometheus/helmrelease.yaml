@@ -27,6 +27,8 @@ spec:
         enabled: true
         storageClass: longhorn
         size: 10Gi
+      extraFlags:
+        - web.enable-remote-write-receiver
     alertmanager:
       enabled: false
     kube-state-metrics:

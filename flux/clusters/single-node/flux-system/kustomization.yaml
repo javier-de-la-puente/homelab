@@ -9,3 +9,4 @@ resources:
 - gateway-kustomization.yaml
 - loki-kustomization.yaml
 - prometheus-kustomization.yaml
+- alloy-kustomization.yaml

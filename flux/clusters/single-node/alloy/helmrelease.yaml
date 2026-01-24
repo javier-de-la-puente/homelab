@@ -1,0 +1,103 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: observability
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: alloy
+      version: "0.x"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: observability
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    alloy:
+      configMap:
+        content: |
+          // Discover Kubernetes pods
+          discovery.kubernetes "pods" {
+            role = "pod"
+          }
+
+          // Relabel to add pod metadata
+          discovery.relabel "pods" {
+            targets = discovery.kubernetes.pods.targets
+
+            rule {
+              source_labels = ["__meta_kubernetes_namespace"]
+              target_label  = "namespace"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_name"]
+              target_label  = "pod"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_container_name"]
+              target_label  = "container"
+            }
+          }
+
+          // Collect logs from pods
+          loki.source.kubernetes "pods" {
+            targets    = discovery.relabel.pods.output
+            forward_to = [loki.write.default.receiver]
+          }
+
+          // Send logs to Loki
+          loki.write "default" {
+            endpoint {
+              url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+            }
+          }
+
+          // Scrape metrics from pods with prometheus.io annotations
+          discovery.relabel "metrics" {
+            targets = discovery.kubernetes.pods.targets
+
+            rule {
+              source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+              regex         = "true"
+              action        = "keep"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
+              target_label  = "__metrics_path__"
+              regex         = "(.+)"
+            }
+            rule {
+              source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+              target_label  = "__address__"
+              regex         = "([^:]+)(?::\\d+)?;(\\d+)"
+              replacement   = "$1:$2"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_namespace"]
+              target_label  = "namespace"
+            }
+            rule {
+              source_labels = ["__meta_kubernetes_pod_name"]
+              target_label  = "pod"
+            }
+          }
+
+          prometheus.scrape "pods" {
+            targets    = discovery.relabel.metrics.output
+            forward_to = [prometheus.remote_write.default.receiver]
+          }
+
+          // Send metrics to Prometheus
+          prometheus.remote_write "default" {
+            endpoint {
+              url = "http://prometheus-server.observability.svc.cluster.local:80/api/v1/write"
+            }
+          }

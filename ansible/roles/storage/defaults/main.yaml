@@ -1,0 +1,8 @@
+---
+# Storage configuration for Longhorn additional disks
+storage_disks: []
+# Example:
+#   - device: /dev/sde1
+#     mount_path: /mnt/longhorn-data
+#     fstype: ext4
+#     label: longhorn-data

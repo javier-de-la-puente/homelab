@@ -1,0 +1,40 @@
+---
+# OS-level disk configuration only
+# Longhorn configuration is handled by add-storage.yaml playbook
+
+- name: Check current filesystem type
+  ansible.builtin.command: blkid -o value -s TYPE {{ item.device }}
+  loop: "{{ storage_disks }}"
+  register: current_fs
+  changed_when: false
+  failed_when: false
+  when: storage_disks is defined and storage_disks | length > 0
+
+- name: Format storage disks
+  community.general.filesystem:
+    dev: "{{ item.item.device }}"
+    fstype: "{{ item.item.fstype | default('ext4') }}"
+    opts: "-L {{ item.item.label }}"
+    force: "{{ item.item.force | default(false) }}"
+  loop: "{{ current_fs.results }}"
+  when:
+    - storage_disks is defined and storage_disks | length > 0
+    - item.stdout != (item.item.fstype | default('ext4'))
+
+- name: Create mount points
+  ansible.builtin.file:
+    path: "{{ item.mount_path }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ storage_disks }}"
+  when: storage_disks is defined and storage_disks | length > 0
+
+- name: Mount storage disks
+  ansible.posix.mount:
+    path: "{{ item.mount_path }}"
+    src: "LABEL={{ item.label }}"
+    fstype: "{{ item.fstype | default('ext4') }}"
+    opts: defaults
+    state: mounted
+  loop: "{{ storage_disks }}"
+  when: storage_disks is defined and storage_disks | length > 0

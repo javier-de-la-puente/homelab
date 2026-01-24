@@ -22,5 +22,10 @@ all:
           path: flux/clusters/single-node
 
       hosts:
-        k8s-node01:
+        firebata:
           ansible_host: 192.168.3.100
+          storage_disks:
+            - device: /dev/sde1
+              mount_path: /mnt/longhorn-data
+              fstype: ext4
+              label: longhorn-data

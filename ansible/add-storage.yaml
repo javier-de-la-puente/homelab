@@ -1,0 +1,99 @@
+---
+# Add storage disk to an existing cluster
+#
+# This playbook:
+#   1. Formats and mounts the disk (OS-level)
+#   2. Configures Longhorn to use it (Kubernetes-level)
+#
+# Usage:
+#   ansible-playbook -i inventory.yaml add-storage.yaml
+#
+# Prerequisites:
+#   - Cluster must be running
+#   - Longhorn must be deployed
+#   - storage_disks must be defined in inventory for the host
+
+- name: Add storage disks to cluster
+  hosts: k8s
+  gather_facts: true
+  tasks:
+    # OS-level: Format and mount
+    - name: Check current filesystem type
+      ansible.builtin.command: blkid -o value -s TYPE {{ item.device }}
+      loop: "{{ storage_disks }}"
+      register: current_fs
+      changed_when: false
+      failed_when: false
+      when: storage_disks is defined and storage_disks | length > 0
+
+    - name: Format storage disks
+      community.general.filesystem:
+        dev: "{{ item.item.device }}"
+        fstype: "{{ item.item.fstype | default('ext4') }}"
+        opts: "-L {{ item.item.label }}"
+        force: "{{ item.item.force | default(false) }}"
+      loop: "{{ current_fs.results }}"
+      when:
+        - storage_disks is defined and storage_disks | length > 0
+        - item.stdout != (item.item.fstype | default('ext4'))
+
+    - name: Create mount points
+      ansible.builtin.file:
+        path: "{{ item.mount_path }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ storage_disks }}"
+      when: storage_disks is defined and storage_disks | length > 0
+
+    - name: Mount storage disks
+      ansible.posix.mount:
+        path: "{{ item.mount_path }}"
+        src: "LABEL={{ item.label }}"
+        fstype: "{{ item.fstype | default('ext4') }}"
+        opts: defaults
+        state: mounted
+      loop: "{{ storage_disks }}"
+      when: storage_disks is defined and storage_disks | length > 0
+
+    # Kubernetes-level: Configure Longhorn
+    - name: Wait for Longhorn to be ready
+      ansible.builtin.command: >
+        kubectl wait --for=condition=ready pod
+        -l app=longhorn-manager
+        -n longhorn-system
+        --timeout=300s
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      changed_when: false
+      when: storage_disks is defined and storage_disks | length > 0
+
+    - name: Get current Longhorn node disk config
+      ansible.builtin.command: >
+        kubectl get nodes.longhorn.io {{ inventory_hostname }}
+        -n longhorn-system -o jsonpath='{.spec.disks}'
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: current_disks
+      changed_when: false
+      when: storage_disks is defined and storage_disks | length > 0
+
+    - name: Add storage disks to Longhorn node
+      ansible.builtin.command: >
+        kubectl patch nodes.longhorn.io {{ inventory_hostname }}
+        -n longhorn-system
+        --type=merge
+        -p '{"spec":{"disks":{"{{ item.label }}":{"path":"{{ item.mount_path }}","allowScheduling":true,"storageReserved":0,"tags":[]}}}}'
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      loop: "{{ storage_disks }}"
+      when:
+        - storage_disks is defined
+        - storage_disks | length > 0
+        - item.label not in current_disks.stdout
+      register: disk_added
+
+    - name: Display result
+      ansible.builtin.debug:
+        msg: "Configured disk {{ item.item.label }} at {{ item.item.mount_path }}"
+      loop: "{{ disk_added.results | default([]) }}"
+      when: item.changed | default(false)

@@ -3,6 +3,7 @@
   hosts: k8s
   gather_facts: true
   roles:
+    - storage
     - containerd
     - kubernetes_prereqs
     - kubernetes

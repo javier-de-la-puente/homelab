@@ -10,6 +10,7 @@ spec:
       namespace: gateway
   hostnames:
     - nextcloud.local
+    - nextcloud.delapuente.es
   rules:
     - matches:
         - path:

@@ -42,7 +42,10 @@ spec:
             - name: MARIADB_DATABASE
               value: nextcloud
             - name: MARIADB_USER
-              value: nextcloud
+              valueFrom:
+                secretKeyRef:
+                  name: nextcloud-secrets
+                  key: db-username
             - name: MARIADB_PASSWORD
               valueFrom:
                 secretKeyRef:

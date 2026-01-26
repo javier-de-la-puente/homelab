@@ -47,10 +47,10 @@ spec:
       type: mysql
       host: mariadb.nextcloud.svc.cluster.local
       database: nextcloud
-      user: nextcloud
       existingSecret:
         enabled: true
         secretName: nextcloud-secrets
+        usernameKey: db-username
         passwordKey: db-password
 
     # Disable bundled databases

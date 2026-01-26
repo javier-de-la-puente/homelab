@@ -15,3 +15,7 @@ spec:
   timeout: 5m
   dependsOn:
     - name: alloy
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

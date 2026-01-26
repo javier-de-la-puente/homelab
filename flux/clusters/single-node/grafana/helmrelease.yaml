@@ -25,7 +25,10 @@ spec:
       enabled: true
       storageClassName: longhorn
       size: 5Gi
-    adminPassword: admin
+    admin:
+      existingSecret: grafana-secrets
+      userKey: admin-user
+      passwordKey: admin-password
     datasources:
       datasources.yaml:
         apiVersion: 1

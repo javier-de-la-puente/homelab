@@ -1,0 +1,5 @@
+creation_rules:
+  # Encrypt secrets in the flux directory
+  - path_regex: flux/.*\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    age: age1w8lcex3r5geeuxuvdfdvdjwm5y6djv7vwd7rqdj6awzpme8wc49qltgxgm

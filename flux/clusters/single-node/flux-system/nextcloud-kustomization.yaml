@@ -16,3 +16,7 @@ spec:
   dependsOn:
     - name: longhorn
     - name: gateway
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

@@ -27,7 +27,11 @@ spec:
     nextcloud:
       host: nextcloud.local
       username: admin
-      password: changeme
+      existingSecret:
+        enabled: true
+        secretName: nextcloud-secrets
+        usernameKey: admin-username
+        passwordKey: admin-password
 
     persistence:
       enabled: true
@@ -44,7 +48,10 @@ spec:
       host: mariadb.nextcloud.svc.cluster.local
       database: nextcloud
       user: nextcloud
-      password: nextcloud-db-pass
+      existingSecret:
+        enabled: true
+        secretName: nextcloud-secrets
+        passwordKey: db-password
 
     # Disable bundled databases
     mariadb:

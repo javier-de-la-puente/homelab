@@ -1,0 +1,25 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: kubernetes-dashboard
+      version: "7.x"
+      sourceRef:
+        kind: HelmRepository
+        name: kubernetes-dashboard
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    app:
+      ingress:
+        enabled: false  # Using Gateway API instead

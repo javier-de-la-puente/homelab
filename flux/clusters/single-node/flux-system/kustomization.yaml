@@ -12,3 +12,4 @@ resources:
 - alloy-kustomization.yaml
 - grafana-kustomization.yaml
 - nextcloud-kustomization.yaml
+- kubernetes-dashboard-kustomization.yaml

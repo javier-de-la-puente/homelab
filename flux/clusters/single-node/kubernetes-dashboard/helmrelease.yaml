@@ -23,3 +23,7 @@ spec:
     app:
       ingress:
         enabled: false  # Using Gateway API instead
+    kong:
+      proxy:
+        http:
+          enabled: true

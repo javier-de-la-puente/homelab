@@ -17,4 +17,4 @@ spec:
             value: /
       backendRefs:
         - name: kubernetes-dashboard-kong-proxy
-          port: 443
+          port: 80

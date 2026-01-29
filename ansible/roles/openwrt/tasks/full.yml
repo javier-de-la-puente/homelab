@@ -1,0 +1,103 @@
+---
+# Stage 2: Full configuration
+# This stage configures:
+#   - All VLANs (1, 10, 11, 20, 30, 40, 50, 60)
+#   - Full firewall zones and inter-VLAN policies
+#   - DHCP pools for each VLAN
+#   - Static DHCP reservations
+#   - WireGuard VPN server + peers
+#   - IPv6 (Hurricane Electric tunnel)
+#   - Port forwards
+#
+# Prerequisites:
+#   - Stage 1 (bootstrap) must be completed
+#   - Router accessible at 10.50.1.1
+
+- name: Wait for router to be reachable
+  ansible.builtin.wait_for_connection:
+    timeout: 60
+
+- name: Gather facts
+  ansible.builtin.setup:
+
+# Install required packages
+- name: Update package list
+  ansible.builtin.command: opkg update
+  changed_when: true
+
+- name: Install required packages
+  ansible.builtin.command: "opkg install {{ item }}"
+  loop:
+    - luci-proto-wireguard
+    - wireguard-tools
+    - 6in4
+    - luci-proto-ipv6
+  register: opkg_install
+  changed_when: "'Installing' in opkg_install.stdout"
+  failed_when: false
+
+# Full network configuration
+- name: Configure network (full)
+  ansible.builtin.template:
+    src: network-full.j2
+    dest: /etc/config/network
+    mode: '0644'
+  notify: Reload network
+
+# Full firewall configuration
+- name: Configure firewall (full)
+  ansible.builtin.template:
+    src: firewall-full.j2
+    dest: /etc/config/firewall
+    mode: '0644'
+  notify: Reload firewall
+
+# Full DHCP configuration
+- name: Configure DHCP (full)
+  ansible.builtin.template:
+    src: dhcp-full.j2
+    dest: /etc/config/dhcp
+    mode: '0644'
+  notify: Reload dnsmasq
+
+# Flush handlers to apply configuration
+- name: Apply all configuration changes
+  ansible.builtin.meta: flush_handlers
+
+# Verify configuration
+- name: Verify VLAN interfaces are up
+  ansible.builtin.command: "ip addr show {{ lan_interface }}.{{ item.id }}"
+  loop: "{{ vlans | selectattr('id', 'ne', 50) | list }}"
+  register: vlan_check
+  changed_when: false
+  failed_when: false
+
+- name: Verify WireGuard interface
+  ansible.builtin.command: wg show wg0
+  register: wg_check
+  changed_when: false
+  failed_when: false
+  when: wireguard is defined
+
+- name: Display configuration summary
+  ansible.builtin.debug:
+    msg: |
+      Full configuration complete!
+
+      Configured VLANs:
+      {% for vlan in vlans %}
+        - VLAN {{ vlan.id }} ({{ vlan.name }}): {{ vlan.subnet }} - Gateway {{ vlan.gateway }}
+      {% endfor %}
+
+      Firewall zones:
+      {% for zone in firewall_zones %}
+        - {{ zone.name }}: {{ zone.network | join(', ') }}
+      {% endfor %}
+
+      Port forwards:
+      {% for fwd in port_forwards %}
+        - {{ fwd.name }}: WAN:{{ fwd.src_dport }} -> {{ fwd.dest_ip }}:{{ fwd.dest_port }}
+      {% endfor %}
+
+      WireGuard: {{ 'Configured' if wireguard is defined else 'Not configured' }}
+      IPv6: {{ 'Configured' if ipv6_enabled else 'Not configured' }}

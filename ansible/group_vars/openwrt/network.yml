@@ -1,0 +1,110 @@
+---
+# OpenWRT Network Configuration
+# VLAN ID matches 3rd octet for new networks (VLAN 20 = 10.50.20.x)
+
+# Router hostname and timezone
+router_hostname: openwrt
+router_timezone: "Europe/Madrid"
+
+# Physical interfaces
+wan_interface: eth1      # USB Ethernet adapter (RTL8153) - WAN via PPPoE
+lan_interface: eth0      # Built-in Gigabit - LAN trunk to switches
+wifi_interface: wlan0    # Built-in WiFi - Management backup
+
+# Note: eth1 requires kmod-usb-net-rtl8152 package (offline install, see docs/router.md)
+
+# WAN configuration (VLAN 20 for Digi ISP)
+wan_vlan_id: 20
+wan_proto: pppoe
+# ISP requires this specific MAC address
+wan_macaddr: "68:77:da:78:1c:47"
+
+# VLAN definitions
+vlans:
+  # Management VLAN - router, switches, emergency access
+  # Note: named 'lan' to match OpenWRT convention and WiFi binding
+  - id: 1
+    name: lan
+    subnet: "10.50.1.0/24"
+    gateway: "10.50.1.1"
+    dhcp_start: 100
+    dhcp_limit: 150
+    leasetime: "12h"
+
+  # Legacy services - nginx reverse proxy, minecraft, matrix, etc.
+  # Keep existing 192.168.10.x to avoid disruption
+  - id: 10
+    name: legacy_services
+    subnet: "192.168.10.0/24"
+    gateway: "192.168.10.1"
+    dhcp_start: 100
+    dhcp_limit: 150
+    leasetime: "12h"
+
+  # Legacy aux - t8plus SSH server, RPi5
+  # Keep existing 192.168.11.x to avoid disruption
+  - id: 11
+    name: legacy_aux
+    subnet: "192.168.11.0/24"
+    gateway: "192.168.11.1"
+    dhcp_start: 100
+    dhcp_limit: 150
+    leasetime: "12h"
+
+  # Trusted VLAN - personal devices, main WiFi
+  - id: 20
+    name: trusted
+    subnet: "10.50.20.0/24"
+    gateway: "10.50.20.1"
+    dhcp_start: 100
+    dhcp_limit: 150
+    leasetime: "12h"
+
+  # IoT VLAN - smart home devices, isolated
+  - id: 30
+    name: iot
+    subnet: "10.50.30.0/24"
+    gateway: "10.50.30.1"
+    dhcp_start: 100
+    dhcp_limit: 150
+    leasetime: "12h"
+
+  # Guest VLAN - internet only, fully isolated
+  - id: 40
+    name: guest
+    subnet: "10.50.40.0/24"
+    gateway: "10.50.40.1"
+    dhcp_start: 100
+    dhcp_limit: 150
+    leasetime: "1h"
+
+  # WireGuard VLAN - VPN clients (virtual, router only)
+  - id: 50
+    name: wireguard
+    subnet: "10.50.50.0/24"
+    gateway: "10.50.50.1"
+    # No DHCP - WireGuard assigns static IPs
+    dhcp_enabled: false
+
+  # Kubernetes VLAN - K8s nodes and LoadBalancer IPs
+  - id: 60
+    name: kubernetes
+    subnet: "10.50.60.0/24"
+    gateway: "10.50.60.1"
+    dhcp_start: 10
+    dhcp_limit: 89
+    leasetime: "24h"
+
+# Management WiFi configuration (for emergency access)
+wifi_ssid: "homelab-mgmt"
+wifi_band: "2g"
+wifi_channel: 6
+wifi_htmode: "HT40"
+wifi_country: "ES"
+wifi_disabled: false
+
+# IPv6 Hurricane Electric tunnel
+ipv6_enabled: true
+he_tunnel_name: "henet"
+
+# Static hosts (DHCP reservations defined in dhcp.yml)

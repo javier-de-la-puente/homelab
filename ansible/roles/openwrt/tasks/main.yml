@@ -1,0 +1,18 @@
+---
+# OpenWRT role entry point
+# Include tasks based on the openwrt_stage variable
+
+- name: Validate stage variable
+  ansible.builtin.assert:
+    that:
+      - openwrt_stage is defined
+      - openwrt_stage in ['bootstrap', 'full']
+    fail_msg: "openwrt_stage must be 'bootstrap' or 'full'"
+
+- name: Include bootstrap tasks (Stage 1)
+  ansible.builtin.include_tasks: bootstrap.yml
+  when: openwrt_stage == 'bootstrap'
+
+- name: Include full configuration tasks (Stage 2)
+  ansible.builtin.include_tasks: full.yml
+  when: openwrt_stage == 'full'

@@ -1,0 +1,19 @@
+---
+# Bootstrap inventory for fresh OpenWRT installation
+# Use this when connecting to a freshly installed OpenWRT at default IP
+#
+# Usage:
+#   ansible-playbook playbooks/openwrt-bootstrap.yml -i inventory/bootstrap/openwrt.yml
+#
+all:
+  children:
+    openwrt:
+      vars:
+        ansible_user: root
+        ansible_python_interpreter: /usr/bin/python3
+        # Uses SSH key authentication (install key first, see docs/router.md)
+        ansible_ssh_extra_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      hosts:
+        router:
+          # Use 192.168.1.1 for fresh install, 10.50.1.1 after bootstrap
+          ansible_host: 10.50.1.1

@@ -1,0 +1,24 @@
+# OpenWRT Wireless Configuration
+# Management WiFi for emergency/backup access
+
+config wifi-device 'radio0'
+	option type 'mac80211'
+	option path 'platform/soc/fe300000.mmcnr/mmc_host/mmc1/mmc1:0001/mmc1:0001:1'
+	option channel '{{ wifi_channel | default(6) }}'
+	option band '{{ wifi_band | default("2g") }}'
+	option htmode '{{ wifi_htmode | default("HT40") }}'
+	option country '{{ wifi_country | default("ES") }}'
+{% if wifi_disabled | default(false) %}
+	option disabled '1'
+{% else %}
+	option disabled '0'
+{% endif %}
+	option cell_density '0'
+
+config wifi-iface 'default_radio0'
+	option device 'radio0'
+	option network 'lan'
+	option mode 'ap'
+	option ssid '{{ wifi_ssid }}'
+	option encryption 'psk2'
+	option key '{{ wifi_password }}'

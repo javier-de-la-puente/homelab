@@ -1,0 +1,34 @@
+---
+# OpenWRT Full Configuration Playbook (Stage 2)
+#
+# This playbook configures the complete network infrastructure:
+#   - All VLANs (1, 10, 11, 20, 30, 40, 50, 60)
+#   - Firewall zones and inter-VLAN policies
+#   - DHCP pools and static reservations
+#   - WireGuard VPN server
+#   - IPv6 (Hurricane Electric tunnel)
+#   - Port forwards
+#
+# Prerequisites:
+#   - Stage 1 (bootstrap) completed
+#   - Router accessible at 10.50.1.1
+#   - secrets.sops.yml encrypted with actual values
+#
+# Usage:
+#   ansible-playbook playbooks/openwrt-full.yml -i inventory/hosts.yml -l router
+#
+# Or if using the production inventory as default:
+#   ansible-playbook playbooks/openwrt-full.yml -l router
+
+- name: Configure OpenWRT Router (Stage 2 - Full)
+  hosts: openwrt
+  gather_facts: false
+  vars:
+    openwrt_stage: full
+  vars_files:
+    - ../group_vars/openwrt/network.yml
+    - ../group_vars/openwrt/firewall.yml
+    - ../group_vars/openwrt/dhcp.yml
+    - ../group_vars/openwrt/secrets.sops.yml
+  roles:
+    - openwrt

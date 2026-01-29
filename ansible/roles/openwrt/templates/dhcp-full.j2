@@ -1,0 +1,63 @@
+# OpenWRT DHCP Configuration - Full Stage
+# DHCP pools for all VLANs + static reservations
+
+config dnsmasq
+	option domainneeded '1'
+	option boguspriv '1'
+	option filterwin2k '0'
+	option localise_queries '1'
+	option rebind_protection '1'
+	option rebind_localhost '1'
+	option local '/{{ local_domain | default("home.lan") }}/'
+	option domain '{{ local_domain | default("home.lan") }}'
+	option expandhosts '1'
+	option nonegcache '0'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/dhcp.leases'
+	option resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+	option nonwildcard '1'
+	option localservice '1'
+	option ednspacket_max '1232'
+{% for dns in dns_servers | default(['1.1.1.1', '8.8.8.8']) %}
+	list server '{{ dns }}'
+{% endfor %}
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+
+{% for vlan in vlans %}
+{% if vlan.dhcp_enabled | default(true) %}
+# DHCP for {{ vlan.name }} (VLAN {{ vlan.id }})
+config dhcp '{{ vlan.name }}'
+	option interface '{{ vlan.name }}'
+	option start '{{ vlan.dhcp_start }}'
+	option limit '{{ vlan.dhcp_limit }}'
+	option leasetime '{{ vlan.leasetime }}'
+{% if vlan.id == 1 or vlan.id == 20 or vlan.id == 60 %}
+	option dhcpv6 'server'
+	option ra 'server'
+	option ra_slaac '1'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
+{% endif %}
+
+{% endif %}
+{% endfor %}
+
+# Static DHCP reservations
+{% for vlan_name, hosts in static_hosts.items() %}
+{% for host in hosts %}
+{% if host.mac != "XX:XX:XX:XX:XX:XX" %}
+config host
+	option name '{{ host.name }}'
+	option mac '{{ host.mac }}'
+	option ip '{{ host.ip }}'
+	option dns '1'
+
+{% endif %}
+{% endfor %}
+{% endfor %}

@@ -1,0 +1,108 @@
+---
+# Stage 1: Bootstrap - Basic connectivity for fresh OpenWRT install
+# This stage configures:
+#   - System hostname and timezone
+#   - PPPoE WAN connection (internet access)
+#   - Management WiFi (emergency backup access)
+#   - Basic LAN with new management IP (10.50.1.1)
+#
+# Prerequisites:
+#   - SSH key installed on router (see docs/router.md)
+#
+# IMPORTANT: This playbook changes the router IP from 192.168.1.1 to 10.50.1.1
+# The connection will be lost after the final task. This is expected.
+# Reconnect by changing your IP to 10.50.1.x or connecting to WiFi.
+
+- name: Wait for router to be reachable
+  ansible.builtin.wait_for_connection:
+    timeout: 60
+
+- name: Gather facts
+  ansible.builtin.setup:
+
+# Write all configuration files first (without reloading)
+- name: Configure system settings
+  ansible.builtin.template:
+    src: system.j2
+    dest: /etc/config/system
+    mode: '0644'
+
+- name: Configure firewall (bootstrap)
+  ansible.builtin.template:
+    src: firewall-bootstrap.j2
+    dest: /etc/config/firewall
+    mode: '0644'
+
+- name: Configure wireless
+  ansible.builtin.template:
+    src: wireless.j2
+    dest: /etc/config/wireless
+    mode: '0644'
+
+- name: Configure DHCP (bootstrap)
+  ansible.builtin.template:
+    src: dhcp-bootstrap.j2
+    dest: /etc/config/dhcp
+    mode: '0644'
+
+- name: Configure network (bootstrap)
+  ansible.builtin.template:
+    src: network-bootstrap.j2
+    dest: /etc/config/network
+    mode: '0644'
+
+# Reload non-network services first
+- name: Reload system configuration
+  ansible.builtin.command: /etc/init.d/system reload
+  changed_when: true
+
+- name: Reload firewall
+  ansible.builtin.command: /etc/init.d/firewall reload
+  changed_when: true
+
+- name: Reload dnsmasq
+  ansible.builtin.command: /etc/init.d/dnsmasq reload
+  changed_when: true
+
+- name: Reload wireless
+  ansible.builtin.command: wifi reload
+  changed_when: true
+
+- name: Display pre-reboot warning
+  ansible.builtin.debug:
+    msg: |
+      ============================================================
+      IMPORTANT: The next task will change the router IP!
+
+      Current IP: {{ ansible_host }} (192.168.1.1)
+      New IP:     10.50.1.1
+
+      The connection WILL BE LOST. This is expected.
+
+      After this task:
+        1. Change your laptop IP: sudo ip addr add 10.50.1.2/24 dev <interface>
+        2. Or connect to WiFi: {{ wifi_ssid }}
+        3. Then SSH to: ssh root@10.50.1.1
+      ============================================================
+
+# Apply network changes - this WILL disconnect us
+- name: Apply network configuration (connection will be lost)
+  ansible.builtin.shell: |
+    # Apply network changes in background so Ansible can exit cleanly
+    nohup sh -c 'sleep 2 && /etc/init.d/network reload' >/dev/null 2>&1 &
+    echo "Network reload scheduled"
+  changed_when: true
+
+- name: Bootstrap complete
+  ansible.builtin.debug:
+    msg: |
+      Bootstrap configuration applied!
+
+      Network reload is happening now - connection will drop.
+
+      Router will be at:
+        - IP: 10.50.1.1
+        - WiFi SSID: {{ wifi_ssid }}
+
+      Next: Run Stage 2 after reconnecting:
+        ansible-playbook playbooks/openwrt-full.yml -l router

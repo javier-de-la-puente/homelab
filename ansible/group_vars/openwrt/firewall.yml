@@ -1,0 +1,192 @@
+---
+# OpenWRT Firewall Configuration
+
+# Firewall zones
+firewall_zones:
+  # LAN zone - full access (management, trusted, K8s)
+  - name: lan
+    input: ACCEPT
+    output: ACCEPT
+    forward: ACCEPT
+    network:
+      - lan
+      - trusted
+      - kubernetes
+
+  # Legacy zone - services on old 192.168.x.x subnets
+  - name: legacy
+    input: ACCEPT
+    output: ACCEPT
+    forward: ACCEPT
+    network:
+      - legacy_services
+      - legacy_aux
+
+  # IoT zone - internet only, no internal access
+  - name: iot
+    input: REJECT
+    output: ACCEPT
+    forward: REJECT
+    network:
+      - iot
+
+  # Guest zone - internet only, fully isolated
+  - name: guest
+    input: REJECT
+    output: ACCEPT
+    forward: REJECT
+    network:
+      - guest
+
+  # VPN zone - WireGuard clients
+  - name: vpn
+    input: ACCEPT
+    output: ACCEPT
+    forward: ACCEPT
+    network:
+      - wireguard
+
+  # WAN zone - external internet
+  - name: wan
+    input: REJECT
+    output: ACCEPT
+    forward: REJECT
+    masq: true
+    mtu_fix: true
+    network:
+      - wan
+      - wan6
+
+# Zone forwarding rules
+firewall_forwardings:
+  # LAN can reach WAN (internet)
+  - src: lan
+    dest: wan
+
+  # Legacy can reach WAN
+  - src: legacy
+    dest: wan
+
+  # Legacy can reach LAN (services communicate)
+  - src: legacy
+    dest: lan
+
+  # LAN can reach legacy (access services)
+  - src: lan
+    dest: legacy
+
+  # IoT can only reach WAN
+  - src: iot
+    dest: wan
+
+  # Guest can only reach WAN
+  - src: guest
+    dest: wan
+
+  # VPN can reach LAN
+  - src: vpn
+    dest: lan
+
+  # VPN can reach legacy
+  - src: vpn
+    dest: legacy
+
+# Additional firewall rules
+firewall_rules:
+  # Allow DHCP on IoT zone
+  - name: Allow-IoT-DHCP
+    src: iot
+    proto: udp
+    dest_port: 67-68
+    target: ACCEPT
+
+  # Allow DNS on IoT zone
+  - name: Allow-IoT-DNS
+    src: iot
+    proto: udp
+    dest_port: 53
+    target: ACCEPT
+
+  # Allow DHCP on Guest zone
+  - name: Allow-Guest-DHCP
+    src: guest
+    proto: udp
+    dest_port: 67-68
+    target: ACCEPT
+
+  # Allow DNS on Guest zone
+  - name: Allow-Guest-DNS
+    src: guest
+    proto: udp
+    dest_port: 53
+    target: ACCEPT
+
+  # Allow K8s to reach IoT (Home Assistant controls devices)
+  - name: Allow-K8s-to-IoT
+    src: lan
+    src_ip: "10.50.60.0/24"
+    dest: iot
+    target: ACCEPT
+
+  # Allow WireGuard UDP from WAN
+  - name: Allow-WireGuard
+    src: wan
+    proto: udp
+    dest_port: 51820
+    target: ACCEPT
+
+# Port forwards (DNAT rules)
+port_forwards:
+  # HTTP to nginx (legacy services)
+  - name: HTTP
+    src: wan
+    proto: tcp
+    src_dport: 80
+    dest: legacy
+    dest_ip: "192.168.10.100"
+    dest_port: 80
+
+  # HTTPS to nginx (legacy services)
+  - name: HTTPS
+    src: wan
+    proto: tcp
+    src_dport: 443
+    dest: legacy
+    dest_ip: "192.168.10.100"
+    dest_port: 443
+
+  # SSH to t8plus (legacy aux)
+  - name: SSH-t8plus
+    src: wan
+    proto: tcp
+    src_dport: 22
+    dest: legacy
+    dest_ip: "192.168.11.2"
+    dest_port: 22
+
+  # SSH to firebata (K8s node)
+  - name: SSH-firebata
+    src: wan
+    proto: tcp
+    src_dport: 22222
+    dest: lan
+    dest_ip: "10.50.60.100"
+    dest_port: 22
+
+  # Minecraft to nginx
+  - name: Minecraft
+    src: wan
+    proto: tcp
+    src_dport: 25565
+    dest: legacy
+    dest_ip: "192.168.10.100"
+    dest_port: 25565
+
+  # Matrix federation (8448) to nginx
+  - name: Matrix
+    src: wan
+    proto: tcp
+    src_dport: 8448
+    dest: legacy
+    dest_ip: "192.168.10.100"
+    dest_port: 8448

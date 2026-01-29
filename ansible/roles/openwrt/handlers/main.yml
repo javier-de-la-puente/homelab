@@ -1,0 +1,25 @@
+---
+# OpenWRT service handlers
+
+- name: Reload system
+  ansible.builtin.command: /etc/init.d/system reload
+  listen: Reload system
+
+- name: Reload network
+  ansible.builtin.command: /etc/init.d/network reload
+  listen: Reload network
+
+- name: Reload firewall
+  ansible.builtin.command: /etc/init.d/firewall reload
+  listen: Reload firewall
+
+- name: Reload dnsmasq
+  ansible.builtin.command: /etc/init.d/dnsmasq reload
+  listen: Reload dnsmasq
+
+- name: Reload wireless
+  ansible.builtin.shell: |
+    wifi down
+    sleep 2
+    wifi up
+  listen: Reload wireless

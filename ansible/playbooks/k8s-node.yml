@@ -1,0 +1,27 @@
+---
+# Kubernetes Node Setup Playbook
+#
+# This playbook bootstraps a Kubernetes node with:
+#   - Storage disk configuration (Longhorn)
+#   - Containerd runtime
+#   - Kubernetes prerequisites
+#   - Kubernetes cluster initialization (kubeadm)
+#   - Cilium CNI
+#   - Flux GitOps
+#
+# Usage:
+#   ansible-playbook playbooks/k8s-node.yml -i inventory/hosts.yml -l firebata
+#
+# Or for adding storage only:
+#   ansible-playbook add-storage.yaml -i inventory/hosts.yml
+
+- name: Bootstrap Kubernetes node
+  hosts: k8s
+  gather_facts: true
+  roles:
+    - storage
+    - containerd
+    - kubernetes_prereqs
+    - kubernetes
+    - cilium
+    - flux

@@ -1,0 +1,99 @@
+# OpenWRT Network Configuration - Full Stage
+# Complete VLAN and interface configuration
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+# WAN interface - PPPoE over VLAN {{ wan_vlan_id }}
+config device
+	option name '{{ wan_interface }}.{{ wan_vlan_id }}'
+	option type '8021q'
+	option ifname '{{ wan_interface }}'
+	option vid '{{ wan_vlan_id }}'
+	option macaddr '{{ wan_macaddr }}'
+
+config interface 'wan'
+	option device '{{ wan_interface }}.{{ wan_vlan_id }}'
+	option proto 'pppoe'
+	option username '{{ pppoe_username }}'
+	option password '{{ pppoe_password }}'
+	option ipv6 'auto'
+	option keepalive '5 5'
+
+config interface 'wan6'
+	option device '@wan'
+	option proto 'dhcpv6'
+	option reqaddress 'try'
+	option reqprefix 'auto'
+
+# Management VLAN 1 - bridge with WiFi
+config device
+	option name '{{ lan_interface }}.1'
+	option type '8021q'
+	option ifname '{{ lan_interface }}'
+	option vid '1'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports '{{ lan_interface }}.1'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '10.50.1.1'
+	option netmask '255.255.255.0'
+
+{% for vlan in vlans %}
+{% if vlan.id != 50 and vlan.id != 1 %}
+# VLAN {{ vlan.id }} - {{ vlan.name }}
+config device
+	option name '{{ lan_interface }}.{{ vlan.id }}'
+	option type '8021q'
+	option ifname '{{ lan_interface }}'
+	option vid '{{ vlan.id }}'
+
+config interface '{{ vlan.name }}'
+	option device '{{ lan_interface }}.{{ vlan.id }}'
+	option proto 'static'
+	option ipaddr '{{ vlan.gateway }}'
+	option netmask '255.255.255.0'
+
+{% endif %}
+{% endfor %}
+
+# WireGuard interface (VLAN 50 is virtual)
+{% if wireguard is defined %}
+config interface 'wireguard'
+	option proto 'wireguard'
+	option private_key '{{ wireguard.private_key }}'
+	option listen_port '{{ wireguard.listen_port }}'
+	list addresses '10.50.50.1/24'
+
+{% for peer in wireguard.peers %}
+config wireguard_wireguard
+	option description '{{ peer.name }}'
+	option public_key '{{ peer.public_key }}'
+	list allowed_ips '{{ peer.allowed_ips }}'
+{% if peer.preshared_key is defined %}
+	option preshared_key '{{ peer.preshared_key }}'
+{% endif %}
+	option persistent_keepalive '25'
+
+{% endfor %}
+{% endif %}
+
+{% if ipv6_enabled and he_tunnel is defined %}
+# Hurricane Electric IPv6 Tunnel
+config interface 'henet'
+	option proto '6in4'
+	option peeraddr '{{ he_tunnel.server_ipv4 }}'
+	option ip6addr '{{ he_tunnel.client_ipv6 }}'
+	option ip6prefix '{{ he_tunnel.routed_prefix }}'
+	option tunlink 'wan'
+	option mtu '1480'
+
+{% endif %}

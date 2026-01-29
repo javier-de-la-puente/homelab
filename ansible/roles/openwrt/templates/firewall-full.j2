@@ -1,0 +1,130 @@
+# OpenWRT Firewall Configuration - Full Stage
+# Complete zone-based firewall with inter-VLAN policies
+
+config defaults
+	option syn_flood '1'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+
+{% for zone in firewall_zones %}
+config zone
+	option name '{{ zone.name }}'
+	option input '{{ zone.input }}'
+	option output '{{ zone.output }}'
+	option forward '{{ zone.forward }}'
+{% if zone.masq | default(false) %}
+	option masq '1'
+{% endif %}
+{% if zone.mtu_fix | default(false) %}
+	option mtu_fix '1'
+{% endif %}
+{% for net in zone.network %}
+	list network '{{ net }}'
+{% endfor %}
+
+{% endfor %}
+
+# Zone forwarding rules
+{% for fwd in firewall_forwardings %}
+config forwarding
+	option src '{{ fwd.src }}'
+	option dest '{{ fwd.dest }}'
+
+{% endfor %}
+
+# Firewall rules
+{% for rule in firewall_rules %}
+config rule
+	option name '{{ rule.name }}'
+	option src '{{ rule.src }}'
+{% if rule.src_ip is defined %}
+	option src_ip '{{ rule.src_ip }}'
+{% endif %}
+{% if rule.dest is defined %}
+	option dest '{{ rule.dest }}'
+{% endif %}
+{% if rule.proto is defined %}
+	option proto '{{ rule.proto }}'
+{% endif %}
+{% if rule.dest_port is defined %}
+	option dest_port '{{ rule.dest_port }}'
+{% endif %}
+	option target '{{ rule.target }}'
+
+{% endfor %}
+
+# Standard IPv4/IPv6 rules
+config rule
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option src_ip 'fc00::/6'
+	option dest_ip 'fc00::/6'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+
+# Port forwards
+{% for fwd in port_forwards %}
+config redirect
+	option name '{{ fwd.name }}'
+	option src '{{ fwd.src }}'
+	option src_dport '{{ fwd.src_dport }}'
+	option dest '{{ fwd.dest }}'
+	option dest_ip '{{ fwd.dest_ip }}'
+	option dest_port '{{ fwd.dest_port }}'
+	option proto '{{ fwd.proto }}'
+	option target 'DNAT'
+
+{% endfor %}

@@ -1,0 +1,81 @@
+#!/bin/sh
+# OVH Dynamic DNS updater for OpenWRT
+# Managed by Ansible - do not edit manually
+
+OVH_ENDPOINT="https://eu.api.ovh.com/1.0"
+OVH_AK="{{ ovh_ddns.application_key }}"
+OVH_AS="{{ ovh_ddns.application_secret }}"
+OVH_CK="{{ ovh_ddns.consumer_key }}"
+ZONE="{{ ovh_ddns.zone }}"
+SUBDOMAIN="{{ ovh_ddns.subdomain | default('') }}"
+
+LOGFILE="/tmp/ovh-ddns.log"
+IPFILE="/tmp/ovh-ddns-lastip"
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "$LOGFILE"
+}
+
+get_public_ip() {
+    curl -s http://ipinfo.io/ip 2>/dev/null || \
+    curl -s http://ifconfig.me 2>/dev/null
+}
+
+ovh_api() {
+    METHOD="$1"
+    QUERY="$2"
+    BODY="$3"
+    URL="${OVH_ENDPOINT}${QUERY}"
+
+    TIMESTAMP=$(curl -s "${OVH_ENDPOINT}/auth/time")
+    if [ -z "$TIMESTAMP" ]; then
+        log "ERROR: Cannot get OVH timestamp"
+        return 1
+    fi
+
+    SIG_DATA="${OVH_AS}+${OVH_CK}+${METHOD}+${URL}+${BODY}+${TIMESTAMP}"
+    SIG='$1$'"$(echo -n "$SIG_DATA" | sha1sum | cut -d' ' -f1)"
+
+    curl -s -X "$METHOD" \
+        -H "X-Ovh-Application: $OVH_AK" \
+        -H "X-Ovh-Timestamp: $TIMESTAMP" \
+        -H "X-Ovh-Signature: $SIG" \
+        -H "X-Ovh-Consumer: $OVH_CK" \
+        -H "Content-Type: application/json" \
+        -d "$BODY" \
+        "$URL"
+}
+
+IP=$(get_public_ip)
+if [ -z "$IP" ]; then
+    log "ERROR: Cannot determine public IP"
+    exit 1
+fi
+
+if [ -f "$IPFILE" ]; then
+    LASTIP=$(cat "$IPFILE")
+    if [ "$IP" = "$LASTIP" ]; then
+        exit 0
+    fi
+fi
+
+log "IP changed: ${LASTIP:-unknown} -> $IP"
+
+RESPONSE=$(ovh_api GET "/domain/zone/${ZONE}/record?fieldType=A&subDomain=${SUBDOMAIN}" "")
+RECORD_ID=$(echo "$RESPONSE" | tr -d '[]' | tr ',' '\n' | head -1)
+
+if [ -z "$RECORD_ID" ] || [ "$RECORD_ID" = "null" ]; then
+    log "ERROR: Cannot find A record ID. Response: $RESPONSE"
+    exit 1
+fi
+
+log "Found record ID: $RECORD_ID"
+
+RESPONSE=$(ovh_api PUT "/domain/zone/${ZONE}/record/${RECORD_ID}" "{\"target\":\"${IP}\"}")
+log "Update response: $RESPONSE"
+
+RESPONSE=$(ovh_api POST "/domain/zone/${ZONE}/refresh" "")
+log "Refresh response: $RESPONSE"
+
+echo "$IP" > "$IPFILE"
+log "Successfully updated ${ZONE} to ${IP}"

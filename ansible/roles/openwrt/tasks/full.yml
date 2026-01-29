@@ -32,6 +32,8 @@
     - wireguard-tools
     - 6in4
     - luci-proto-ipv6
+    - coreutils-sha1sum
+    - curl
   register: opkg_install
   changed_when: "'Installing' in opkg_install.stdout"
   failed_when: false
@@ -78,6 +80,21 @@
   changed_when: false
   failed_when: false
   when: wireguard is defined
+
+# OVH Dynamic DNS
+- name: Deploy OVH DDNS script
+  ansible.builtin.template:
+    src: ovh-ddns.sh.j2
+    dest: /root/ovh-ddns.sh
+    mode: '0700'
+  when: ovh_ddns is defined
+
+- name: Configure OVH DDNS cron job
+  ansible.builtin.cron:
+    name: "OVH DDNS update"
+    minute: "*/5"
+    job: "/root/ovh-ddns.sh"
+  when: ovh_ddns is defined
 
 - name: Display configuration summary
   ansible.builtin.debug:

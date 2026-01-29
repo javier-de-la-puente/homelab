@@ -126,5 +126,9 @@ config redirect
 	option dest_port '{{ fwd.dest_port }}'
 	option proto '{{ fwd.proto }}'
 	option target 'DNAT'
+	option reflection '1'
+	option reflection_src 'internal'
+	list reflection_zone 'lan'
+	list reflection_zone 'legacy'
 
 {% endfor %}

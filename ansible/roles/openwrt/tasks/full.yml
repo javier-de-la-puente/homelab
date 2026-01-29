@@ -62,6 +62,14 @@
     mode: '0644'
   notify: Reload dnsmasq
 
+# uhttpd configuration - only listen on LAN
+- name: Configure uhttpd (LAN only)
+  ansible.builtin.template:
+    src: uhttpd.j2
+    dest: /etc/config/uhttpd
+    mode: '0644'
+  notify: Restart uhttpd
+
 # Flush handlers to apply configuration
 - name: Apply all configuration changes
   ansible.builtin.meta: flush_handlers

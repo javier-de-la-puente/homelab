@@ -23,3 +23,7 @@
     sleep 2
     wifi up
   listen: Reload wireless
+
+- name: Restart uhttpd
+  ansible.builtin.command: /etc/init.d/uhttpd restart
+  listen: Restart uhttpd

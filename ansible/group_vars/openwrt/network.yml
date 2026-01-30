@@ -16,8 +16,7 @@ wifi_interface: wlan0    # Built-in WiFi - Management backup
 # WAN configuration (VLAN 20 for Digi ISP)
 wan_vlan_id: 20
 wan_proto: pppoe
-# ISP requires this specific MAC address
-wan_macaddr: "68:77:da:78:1c:47"
+# wan_macaddr defined in secrets.sops.yml
 
 # VLAN definitions
 vlans:

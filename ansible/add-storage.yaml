@@ -6,7 +6,7 @@
 #   2. Configures Longhorn to use it (Kubernetes-level)
 #
 # Usage:
-#   ansible-playbook -i inventory.yaml add-storage.yaml
+#   ansible-playbook -i inventory/hosts.yml add-storage.yaml
 #
 # Prerequisites:
 #   - Cluster must be running
@@ -16,7 +16,7 @@
 # Example - Adding a 1.8TB disk:
 #
 #   1. Plug the disk and find the device:
-#      $ ssh ubuntu@192.168.3.100 lsblk
+#      $ ssh ubuntu@10.50.60.100 lsblk
 #      sde      1.8T disk
 #      └─sde1   1.8T part
 #
@@ -29,7 +29,7 @@
 #          force: true  # only if overwriting existing filesystem
 #
 #   3. Run this playbook:
-#      $ ansible-playbook -i inventory.yaml add-storage.yaml
+#      $ ansible-playbook -i inventory/hosts.yml add-storage.yaml
 #
 #   4. Verify in Longhorn:
 #      $ kubectl get nodes.longhorn.io -n longhorn-system -o yaml

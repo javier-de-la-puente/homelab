@@ -12,7 +12,7 @@ autoinstall:
       enp3s0:
         dhcp4: yes
         addresses:
-          - 192.168.3.100/24
+          - 10.50.60.100/24
   storage:
     layout:
       name: direct

@@ -77,6 +77,9 @@ config interface 'wireguard'
 config wireguard_wireguard
 	option description '{{ peer.name }}'
 	option public_key '{{ peer.public_key }}'
+{% if peer.private_key is defined %}
+	option private_key '{{ peer.private_key }}'
+{% endif %}
 	list allowed_ips '{{ peer.allowed_ips }}'
 {% if peer.preshared_key is defined %}
 	option preshared_key '{{ peer.preshared_key }}'

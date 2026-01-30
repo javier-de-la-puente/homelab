@@ -22,7 +22,7 @@ All secrets use the same age public key:
 age1w8lcex3r5geeuxuvdfdvdjwm5y6djv7vwd7rqdj6awzpme8wc49qltgxgm
 ```
 
-The private key must be available at `~/.config/sops/age/keys.txt` or via the `SOPS_AGE_KEY_FILE` environment variable.
+The private key must be available at `~/.sops/age-key.txt` (configured in `ansible/ansible.cfg`) or via the `SOPS_AGE_KEY_FILE` environment variable.
 
 ## SOPS Configuration
 
@@ -189,9 +189,70 @@ The file path doesn't match any rule in `.sops.yaml`. Add a matching rule or che
 
 ### Ansible Can't Decrypt
 
-Install the SOPS collection:
-```bash
-ansible-galaxy collection install community.sops
+1. Install the SOPS collection:
+   ```bash
+   ansible-galaxy collection install community.sops
+   ```
+
+2. Ensure `sops` is in PATH
+
+3. Verify the age key path in `ansible/ansible.cfg`:
+   ```ini
+   [community.sops]
+   age_keyfile = ~/.sops/age-key.txt
+   ```
+
+4. Check that the `inventory/group_vars` symlink exists:
+   ```bash
+   ls -la ansible/inventory/group_vars
+   # Should point to ../group_vars
+   ```
+
+## How Ansible SOPS Integration Works
+
+The `community.sops.sops` vars plugin automatically decrypts SOPS-encrypted files in `group_vars/` and `host_vars/` directories.
+
+### Configuration
+
+The vars plugin is enabled in `ansible/ansible.cfg`:
+
+```ini
+[defaults]
+vars_plugins_enabled = host_group_vars,community.sops.sops
+
+[community.sops]
+age_keyfile = ~/.sops/age-key.txt
 ```
 
-And ensure `sops` is in PATH.
+### Important: Do NOT Use vars_files for SOPS Files
+
+**Never load SOPS-encrypted files via `vars_files` in playbooks:**
+
+```yaml
+# WRONG - bypasses SOPS decryption!
+vars_files:
+  - ../group_vars/openwrt/secrets.sops.yml
+
+# CORRECT - let the vars plugin handle it automatically
+# (no vars_files entry for secrets.sops.yml)
+```
+
+The `vars_files` directive loads files as raw YAML without decryption. The SOPS vars plugin handles decryption automatically when files are in `group_vars/` or `host_vars/`.
+
+### Directory Structure
+
+The SOPS vars plugin looks for encrypted files in:
+- `<inventory_dir>/group_vars/`
+- `<playbook_dir>/group_vars/`
+
+A symlink ensures the plugin finds the files:
+```
+ansible/inventory/group_vars -> ../group_vars
+```
+
+### Variable Precedence
+
+When both `host_group_vars` and `community.sops.sops` plugins are enabled:
+1. `host_group_vars` loads `.yml` files (including `.sops.yml` as raw YAML)
+2. `community.sops.sops` loads and decrypts `.sops.yml` files
+3. **Last defined wins** - decrypted values override encrypted strings

@@ -26,9 +26,11 @@
   vars:
     openwrt_stage: full
   vars_files:
+    # Load non-secret config files explicitly (playbook-relative path)
     - ../group_vars/openwrt/network.yml
     - ../group_vars/openwrt/firewall.yml
     - ../group_vars/openwrt/dhcp.yml
-    - ../group_vars/openwrt/secrets.sops.yml
+    # Note: secrets.sops.yml is auto-loaded and decrypted by the
+    # community.sops.sops vars plugin - do NOT load it here!
   roles:
     - openwrt

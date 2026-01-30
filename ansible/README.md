@@ -117,7 +117,11 @@ Used only for fresh OpenWRT installations:
 
 ## Secrets
 
-Secrets are stored in `group_vars/openwrt/secrets.sops.yml` and encrypted with SOPS+age.
+Secrets are stored in `group_vars/openwrt/secrets.sops.yml` and encrypted with SOPS+age. The `community.sops.sops` vars plugin automatically decrypts them at runtime.
+
+**Prerequisites:**
+- Age private key at `~/.sops/age-key.txt`
+- Symlink: `inventory/group_vars -> ../group_vars`
 
 **Edit secrets:**
 ```bash
@@ -130,11 +134,14 @@ sops -d group_vars/openwrt/secrets.sops.yml
 ```
 
 Secrets include:
-- PPPoE credentials
-- WiFi password
-- Root password hash
-- WireGuard keys
-- Hurricane Electric tunnel credentials
+- PPPoE credentials (`pppoe_username`, `pppoe_password`)
+- WAN MAC address (`wan_macaddr`)
+- WiFi password (`wifi_password`)
+- WireGuard keys (`wireguard.*`)
+- Hurricane Electric tunnel credentials (`he_tunnel.*`)
+- OVH DDNS credentials (`ovh_ddns.*`)
+
+**Important:** Do NOT add `secrets.sops.yml` to `vars_files` in playbooks - the vars plugin handles decryption automatically.
 
 See [docs/secrets.md](../docs/secrets.md) for details.
 
@@ -202,9 +209,19 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@192.168.1.1
 
 ### SOPS Decryption Failures
 
-Ensure age key is available:
+Ensure age key is available at the path configured in `ansible.cfg`:
 ```bash
-export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
+# Default location (configured in ansible.cfg)
+~/.sops/age-key.txt
+
+# Or set via environment variable
+export SOPS_AGE_KEY_FILE=~/.sops/age-key.txt
+```
+
+Verify the inventory symlink exists:
+```bash
+ls -la inventory/group_vars
+# Should show: group_vars -> ../group_vars
 ```
 
 ### Ansible Module Not Found

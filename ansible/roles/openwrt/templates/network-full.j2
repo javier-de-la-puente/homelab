@@ -92,7 +92,12 @@ config interface 'henet'
 	option proto '6in4'
 	option peeraddr '{{ he_tunnel.server_ipv4 }}'
 	option ip6addr '{{ he_tunnel.client_ipv6 }}'
-	option ip6prefix '{{ he_tunnel.routed_prefix }}'
+	option tunnelid '{{ he_tunnel.tunnel_id }}'
+	option username '{{ he_tunnel.username }}'
+	option password '{{ he_tunnel.update_key }}'
+{% for prefix in he_tunnel.routed_prefixes %}
+	list ip6prefix '{{ prefix }}'
+{% endfor %}
 	option tunlink 'wan'
 	option mtu '1480'
 

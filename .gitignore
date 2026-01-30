@@ -1,3 +1,4 @@
+# Secrets (keep local, backup separately)
 ansible/group_vars/openwrt/secrets.sops.yml
 
 # Editor backup files

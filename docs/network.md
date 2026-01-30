@@ -84,7 +84,6 @@ Internet
 | Server | 10.50.50.1 | OpenWRT router |
 | thinkpadpersonal | 10.50.50.2 | |
 | doctormorales | 10.50.50.3 | |
-| diego | 10.50.50.4 | |
 
 ## Firewall Zones
 

@@ -91,6 +91,10 @@ firewall_forwardings:
   - src: vpn
     dest: legacy
 
+  # VPN can reach WAN (internet access)
+  - src: vpn
+    dest: wan
+
 # Additional firewall rules
 firewall_rules:
   # Allow DHCP on IoT zone
